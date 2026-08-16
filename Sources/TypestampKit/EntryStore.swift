@@ -55,7 +55,9 @@ public final class EntryStore: Sendable {
     /// Saves a capture. Returns the stored entry, or nil when there was
     /// nothing to save (no image and no non-whitespace text).
     @discardableResult
-    public func save(text: String?, imagePath: String? = nil, at date: Date = Date()) throws -> Entry? {
+    public func save(text: String?, imagePath: String? = nil, at date: Date = Date()) throws
+        -> Entry?
+    {
         let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanText = trimmed.flatMap { $0.isEmpty ? nil : $0 }
         guard cleanText != nil || imagePath != nil else { return nil }
@@ -70,28 +72,41 @@ public final class EntryStore: Sendable {
     /// All entries, newest first. A non-empty query filters through
     /// full-text search, matching every term as a prefix.
     public func entries(matching query: String? = nil) throws -> [Entry] {
-        let trimmed = (query ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        return try dbQueue.read { db in
-            guard !trimmed.isEmpty else {
-                return try Entry
-                    .order(Column("createdAt").desc, Column("id").desc)
-                    .fetchAll(db)
-            }
-            // FTS5Pattern sanitizes user input that raw FTS5 MATCH would
-            // reject as a syntax error; nil means no searchable token.
-            guard let pattern = FTS5Pattern(matchingAllPrefixesIn: trimmed) else {
-                return []
-            }
-            return try Entry.fetchAll(
-                db,
-                sql: """
-                    SELECT entry.*
-                    FROM entry
-                    JOIN entry_ft ON entry_ft.rowid = entry.id AND entry_ft MATCH ?
-                    ORDER BY entry.createdAt DESC, entry.id DESC
-                    """,
-                arguments: [pattern])
+        try dbQueue.read { db in
+            try Self.fetchEntries(db, matching: query)
         }
+    }
+
+    /// A live feed of `entries(matching:)` that re-emits whenever the
+    /// database changes.
+    public func observeEntries(matching query: String? = nil) -> AsyncValueObservation<[Entry]> {
+        ValueObservation
+            .tracking { db in try Self.fetchEntries(db, matching: query) }
+            .values(in: dbQueue)
+    }
+
+    private static func fetchEntries(_ db: Database, matching query: String?) throws -> [Entry] {
+        let trimmed = (query ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return
+                try Entry
+                .order(Column("createdAt").desc, Column("id").desc)
+                .fetchAll(db)
+        }
+        // FTS5Pattern sanitizes user input that raw FTS5 MATCH would
+        // reject as a syntax error; nil means no searchable token.
+        guard let pattern = FTS5Pattern(matchingAllPrefixesIn: trimmed) else {
+            return []
+        }
+        return try Entry.fetchAll(
+            db,
+            sql: """
+                SELECT entry.*
+                FROM entry
+                JOIN entry_ft ON entry_ft.rowid = entry.id AND entry_ft MATCH ?
+                ORDER BY entry.createdAt DESC, entry.id DESC
+                """,
+            arguments: [pattern])
     }
 
     public func delete(id: Int64) throws {

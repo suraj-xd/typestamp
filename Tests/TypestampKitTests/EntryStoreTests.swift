@@ -135,6 +135,32 @@ struct EntryStoreTests {
         #expect(try store.entries(matching: "   ").count == 2)
     }
 
+    @Test(
+        "observation emits current entries, then updates after each save", .timeLimit(.minutes(1)))
+    func observationEmitsUpdates() async throws {
+        let store = try EntryStore.inMemory()
+        try store.save(text: "first", at: date(10))
+
+        var iterator = store.observeEntries(matching: nil).makeAsyncIterator()
+        let initial = try await iterator.next()
+        #expect(initial?.map(\.text) == ["first"])
+
+        try store.save(text: "second", at: date(0))
+        let updated = try await iterator.next()
+        #expect(updated?.map(\.text) == ["second", "first"])
+    }
+
+    @Test("observation respects the search query", .timeLimit(.minutes(1)))
+    func observationRespectsQuery() async throws {
+        let store = try EntryStore.inMemory()
+        try store.save(text: "apple pie", at: date(10))
+        try store.save(text: "banana bread", at: date(0))
+
+        var iterator = store.observeEntries(matching: "app").makeAsyncIterator()
+        let results = try await iterator.next()
+        #expect(results?.map(\.text) == ["apple pie"])
+    }
+
     @Test("delete removes the entry from the log and from search")
     func deleteRemovesEverywhere() throws {
         let store = try EntryStore.inMemory()
