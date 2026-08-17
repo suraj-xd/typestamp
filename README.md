@@ -1,10 +1,16 @@
-# Typestamp
-
-Everything you type or paste, stamped with when.
+<div align="center">
+  <img src="Assets/icon.png" width="120" alt="Typestamp icon" />
+  <h1>Typestamp</h1>
+  <p><strong>Everything you type or paste, stamped with when.</strong></p>
+</div>
 
 Typestamp is a tiny macOS capture app. Press <kbd>⇧⌘'</kbd> anywhere, type or
 paste, hit <kbd>Return</kbd> — it's in the log with a timestamp. The log is a
 searchable, day-grouped journal of everything you've ever captured.
+
+<p align="center">
+  <img src="Assets/screenshot.png" width="560" alt="The Typestamp log window: day-grouped entries with todos, a bookmark, search, and a live clock" />
+</p>
 
 ## Features
 
