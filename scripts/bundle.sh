@@ -26,6 +26,10 @@ done
 # Regenerate with scripts/make-icon.sh after changing Assets/icon.png.
 cp Assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
+# Small copy of the icon that the first-launch onboarding seeds into the
+# log as a demo image (see OnboardingSeeder).
+sips -z 512 512 Assets/icon.png --out "$APP/Contents/Resources/onboarding-logo.png" >/dev/null
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

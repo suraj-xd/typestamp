@@ -36,6 +36,19 @@ struct EntryStoreTests {
         #expect(texts == ["newest", "middle", "oldest"])
     }
 
+    @Test("count tracks saves and deletes")
+    func countTracksSavesAndDeletes() throws {
+        let store = try EntryStore.inMemory()
+        #expect(try store.count() == 0)
+
+        let saved = try store.save(text: "one", at: date(60))
+        try store.save(text: "two", at: date(0))
+        #expect(try store.count() == 2)
+
+        try store.delete(id: saved!.id!)
+        #expect(try store.count() == 1)
+    }
+
     @Test("whitespace-only capture saves nothing")
     func whitespaceOnlyCaptureSavesNothing() throws {
         let store = try EntryStore.inMemory()

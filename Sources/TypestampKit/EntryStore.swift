@@ -125,6 +125,13 @@ public final class EntryStore: Sendable {
             arguments: [pattern])
     }
 
+    /// The number of stored entries.
+    public func count() throws -> Int {
+        try dbQueue.read { db in
+            try Entry.fetchCount(db)
+        }
+    }
+
     public func delete(id: Int64) throws {
         _ = try dbQueue.write { db in
             try Entry.deleteOne(db, key: id)

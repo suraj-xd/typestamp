@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Self.shared = self
+        OnboardingSeeder.seedIfNeeded()
         let controller = CapturePanelController(model: .shared)
         panelController = controller
         KeyboardShortcuts.onKeyDown(for: .toggleCapture) { [weak controller] in
