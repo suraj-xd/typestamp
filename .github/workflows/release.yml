@@ -1,0 +1,32 @@
+name: Release
+
+# Tag a version (git tag v0.1.0 && git push --tags) to build a DMG and
+# attach it to a GitHub Release.
+#
+# TODO once an Apple Developer ID exists: import the signing certificate,
+# replace the ad-hoc codesign in scripts/bundle.sh with "Developer ID
+# Application", then notarize the DMG (xcrun notarytool submit --wait) and
+# staple it (xcrun stapler staple) before the release step.
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app
+      - name: Run tests
+        run: swift test
+      - name: Build DMG
+        run: scripts/make-dmg.sh
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.dmg
+          generate_release_notes: true
