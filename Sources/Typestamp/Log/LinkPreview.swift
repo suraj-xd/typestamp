@@ -135,10 +135,13 @@ struct LinkPreview: View {
     }
 
     private func loadImage(from provider: NSItemProvider) async -> NSImage? {
-        await withCheckedContinuation { continuation in
+        // Cross the continuation with Data, not NSImage: NSImage is not
+        // Sendable-annotated on older SDKs.
+        let data: Data? = await withCheckedContinuation { continuation in
             _ = provider.loadObject(ofClass: NSImage.self) { object, _ in
-                continuation.resume(returning: object as? NSImage)
+                continuation.resume(returning: (object as? NSImage)?.tiffRepresentation)
             }
         }
+        return data.flatMap(NSImage.init(data:))
     }
 }
