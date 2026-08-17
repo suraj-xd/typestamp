@@ -1,5 +1,7 @@
 import AppKit
-import LinkPresentation
+// @preconcurrency: LPLinkMetadata is only Sendable-annotated in newer SDKs;
+// CI's older toolchain needs the fetch treated as preconcurrency.
+@preconcurrency import LinkPresentation
 import SwiftUI
 
 /// Detects a "clean link" capture: the entire text is a single http(s) URL.
@@ -18,7 +20,9 @@ func cleanLinkURL(from text: String?) -> URL? {
 
 /// Fetched bookmark metadata, cached per URL for the session so scrolling
 /// doesn't refetch. Failures cache too (as empty), avoiding retry storms.
-private final class LinkMeta: NSObject, Sendable {
+/// @unchecked: immutable after init, but NSImage is not Sendable-annotated
+/// on older SDKs.
+private final class LinkMeta: NSObject, @unchecked Sendable {
     let title: String?
     let icon: NSImage?
     /// The page's OpenGraph/hero image, when it has one.

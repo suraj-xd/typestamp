@@ -5,7 +5,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-VERSION="0.1.0"
+VERSION="0.2.0"
 OUT="${1:-dist}"
 APP="$OUT/Typestamp.app"
 
