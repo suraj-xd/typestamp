@@ -30,16 +30,26 @@ final class AppModel {
 
     /// Saves a capture. Returns false when there was nothing to save.
     @discardableResult
-    func capture(text: String, image: NSImage?) -> Bool {
+    func capture(text: String, image: NSImage?, asTodo: Bool = false) -> Bool {
         do {
             var imagePath: String?
             if let image, let png = image.pngData() {
                 imagePath = try images.savePNG(png)
             }
-            return try store.save(text: text, imagePath: imagePath) != nil
+            return try store.save(text: text, imagePath: imagePath, isTodo: asTodo) != nil
         } catch {
             NSLog("Typestamp: capture failed: %@", String(describing: error))
             return false
+        }
+    }
+
+    /// Flips a todo between open and done.
+    func toggleDone(_ entry: Entry) {
+        guard let id = entry.id else { return }
+        do {
+            try store.setCompleted(id: id, completed: entry.completedAt == nil)
+        } catch {
+            NSLog("Typestamp: todo toggle failed: %@", String(describing: error))
         }
     }
 

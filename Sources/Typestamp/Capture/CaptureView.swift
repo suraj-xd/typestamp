@@ -16,10 +16,12 @@ final class CaptureState {
     }
 }
 
-/// The capture bar: `[live time] [image?] [input…] [↩]`.
+/// The capture bar: `[live clock pill] [image?] [input…] [↩ disc]` inside an
+/// opaque paper capsule. The return disc fills ink-black once there is
+/// content worth stamping.
 struct CaptureView: View {
     @Bindable var state: CaptureState
-    let onSubmit: () -> Void
+    let onSubmit: (_ asTodo: Bool) -> Void
     let onCancel: () -> Void
 
     @State private var textHeight: CGFloat = CaptureMetrics.minTextHeight
@@ -27,31 +29,41 @@ struct CaptureView: View {
     private enum CaptureMetrics {
         static let width: CGFloat = 640
         static let minTextHeight: CGFloat = 22
-        // Roughly five lines of 16pt text before scrolling kicks in.
-        static let maxTextHeight: CGFloat = 110
+        // Roughly five lines of 15pt text before scrolling kicks in.
+        static let maxTextHeight: CGFloat = 105
+        // Half the bar's single-line height, so it reads as a capsule when
+        // empty and a soft rounded rectangle as the text grows.
+        static let cornerRadius: CGFloat = 27
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            liveClock
+        // Top-aligned so the clock stays pinned at the upper left while the
+        // content grows taller.
+        HStack(alignment: .top, spacing: 12) {
+            ClockPill(showsSeconds: true, height: 30)
 
-            if let image = state.image {
-                imageChip(image)
+            // A pasted image sits on its own line with the text below it.
+            VStack(alignment: .leading, spacing: 8) {
+                if let image = state.image {
+                    imageChip(image)
+                }
+                textInput
+                    // Centers a single 22pt text line against the 30pt
+                    // pill, so the one-line bar looks unchanged.
+                    .padding(.top, state.image == nil ? 4 : 0)
             }
 
-            textInput
-
-            Image(systemName: "return")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(hasContent ? Color.accentColor : Color.secondary.opacity(0.4))
+            returnDisc
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
         .frame(width: CaptureMetrics.width)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .background(
+            Theme.paper,
+            in: RoundedRectangle(cornerRadius: CaptureMetrics.cornerRadius))
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(Color.primary.opacity(0.12))
+            RoundedRectangle(cornerRadius: CaptureMetrics.cornerRadius)
+                .strokeBorder(Theme.hairline)
         )
     }
 
@@ -60,24 +72,33 @@ struct CaptureView: View {
             || !state.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private var liveClock: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            Text(context.date, format: .dateTime.hour().minute().second())
-                .font(.system(.body, design: .monospaced))
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
+    private var returnDisc: some View {
+        ZStack {
+            Circle()
+                .fill(hasContent ? Theme.pill : Color.clear)
+            Circle()
+                .strokeBorder(Theme.hairline, lineWidth: hasContent ? 0 : 1)
+            Image(systemName: "return")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(hasContent ? Theme.onPill : Theme.inkWhisper)
         }
+        .frame(width: 30, height: 30)
+        .animation(.easeOut(duration: 0.15), value: hasContent)
+        .help("Return logs it · Shift-Return logs a todo · Option-Return adds a line")
     }
 
     private func imageChip(_ image: NSImage) -> some View {
-        Image(nsImage: image)
+        // An exact frame from the image's aspect ratio, so the border hugs
+        // the image instead of stretching to a max width.
+        let size = fittedSize(for: image, maxWidth: 380, maxHeight: 120)
+        return Image(nsImage: image)
             .resizable()
-            .scaledToFill()
-            .frame(width: 36, height: 36)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .scaledToFit()
+            .frame(width: size.width, height: size.height)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .strokeBorder(Color.primary.opacity(0.15))
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Theme.hairline)
             )
             .onTapGesture { state.image = nil }
             .help("Click to remove the image")
@@ -96,11 +117,22 @@ struct CaptureView: View {
                 max(textHeight, CaptureMetrics.minTextHeight),
                 CaptureMetrics.maxTextHeight)
         )
+        .overlay(alignment: .topLeading) {
+            if state.text.isEmpty && state.image == nil {
+                Text("Type or paste…")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Theme.inkWhisper)
+                    // Clears the insertion point blinking at x = 0.
+                    .padding(.top, 2)
+                    .padding(.leading, 3)
+                    .allowsHitTesting(false)
+            }
+        }
         .overlay(alignment: .bottom) {
             // Fade hint when the text overflows and scrolls.
             if textHeight > CaptureMetrics.maxTextHeight {
                 LinearGradient(
-                    colors: [.clear, Color(nsColor: .windowBackgroundColor).opacity(0.7)],
+                    colors: [Theme.paper.opacity(0), Theme.paper.opacity(0.85)],
                     startPoint: .top, endPoint: .bottom
                 )
                 .frame(height: 14)

@@ -39,7 +39,7 @@ final class CapturePanelController: NSObject, NSWindowDelegate {
 
         let view = CaptureView(
             state: state,
-            onSubmit: { [weak self] in self?.submit() },
+            onSubmit: { [weak self] asTodo in self?.submit(asTodo: asTodo) },
             onCancel: { [weak self] in self?.hide() })
         let hosting = NSHostingController(rootView: view)
         hosting.sizingOptions = .preferredContentSize
@@ -69,8 +69,8 @@ final class CapturePanelController: NSObject, NSWindowDelegate {
         panel.orderOut(nil)
     }
 
-    private func submit() {
-        model.capture(text: state.text, image: state.image)
+    private func submit(asTodo: Bool) {
+        model.capture(text: state.text, image: state.image, asTodo: asTodo)
         hide()
     }
 

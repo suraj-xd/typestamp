@@ -1,9 +1,9 @@
 import KeyboardShortcuts
 
 extension KeyboardShortcuts.Name {
-    /// Summons the capture panel. ⌃⇧Space by default; user-configurable in
-    /// Settings.
+    /// Summons the capture panel. ⇧⌘' by default — a right-hand symbol key
+    /// with no common system binding; user-configurable in Settings.
     static let toggleCapture = Self(
         "toggleCapture",
-        default: .init(.space, modifiers: [.control, .shift]))
+        default: .init(.quote, modifiers: [.command, .shift]))
 }

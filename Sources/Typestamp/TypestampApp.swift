@@ -10,6 +10,10 @@ struct TypestampApp: App {
             LogView(model: .shared)
         }
         .defaultSize(width: 560, height: 640)
+        .windowStyle(.hiddenTitleBar)
+        // Clamps resizing to LogView's min/max frame: entries are short
+        // lines, so the window stays a compact panel, never a big screen.
+        .windowResizability(.contentSize)
 
         Settings {
             SettingsView()

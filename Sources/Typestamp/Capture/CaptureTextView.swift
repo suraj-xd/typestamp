@@ -8,14 +8,18 @@ struct CaptureTextView: NSViewRepresentable {
     @Binding var text: String
     @Binding var contentHeight: CGFloat
     let onImagePaste: (NSImage) -> Void
-    let onSubmit: () -> Void
+    /// Called on Enter; the flag is true for Shift+Enter, which logs the
+    /// capture as a todo.
+    let onSubmit: (_ asTodo: Bool) -> Void
     let onCancel: () -> Void
 
     func makeNSView(context: Context) -> NSScrollView {
         let textView = PasteCatchingTextView()
         textView.delegate = context.coordinator
         textView.onImagePaste = { context.coordinator.parent.onImagePaste($0) }
-        textView.font = .systemFont(ofSize: 16)
+        textView.font = .systemFont(ofSize: 15)
+        textView.textColor = Theme.inkNS
+        textView.insertionPointColor = Theme.inkNS
         textView.isRichText = false
         textView.drawsBackground = false
         textView.allowsUndo = true
@@ -86,11 +90,13 @@ struct CaptureTextView: NSViewRepresentable {
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             switch commandSelector {
             case #selector(NSResponder.insertNewline(_:)):
-                // Shift+Enter inserts a newline; plain Enter submits.
-                if NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
+                // Enter logs, Shift+Enter logs a todo, Option+Enter inserts
+                // a newline.
+                let modifiers = NSApp.currentEvent?.modifierFlags ?? []
+                if modifiers.contains(.option) {
                     return false
                 }
-                parent.onSubmit()
+                parent.onSubmit(modifiers.contains(.shift))
                 return true
             case #selector(NSResponder.cancelOperation(_:)):
                 parent.onCancel()
@@ -106,6 +112,28 @@ struct CaptureTextView: NSViewRepresentable {
 /// them into the text.
 final class PasteCatchingTextView: NSTextView {
     var onImagePaste: ((NSImage) -> Void)?
+
+    /// The capture panel is non-activating, so the app's Edit menu — which
+    /// normally resolves ⌘V/⌘C/etc. — is never installed. Handle the
+    /// standard editing equivalents here, like every Spotlight-style panel
+    /// must.
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard event.type == .keyDown else {
+            return super.performKeyEquivalent(with: event)
+        }
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let key = event.charactersIgnoringModifiers?.lowercased()
+        switch (modifiers, key) {
+        case ([.command], "v"): paste(nil)
+        case ([.command], "c"): copy(nil)
+        case ([.command], "x"): cut(nil)
+        case ([.command], "a"): selectAll(nil)
+        case ([.command], "z"): undoManager?.undo()
+        case ([.command, .shift], "z"): undoManager?.redo()
+        default: return super.performKeyEquivalent(with: event)
+        }
+        return true
+    }
 
     override func paste(_ sender: Any?) {
         if let image = Self.image(from: .general) {
