@@ -9,6 +9,10 @@ paste, hit <kbd>Return</kbd> — it's in the log with a timestamp. The log is a
 searchable, day-grouped journal of everything you've ever captured.
 
 <p align="center">
+  <img src="Assets/capture-bar.png" width="560" alt="The capture bar: a floating paper capsule with a live clock, summoned anywhere with ⇧⌘'" />
+</p>
+
+<p align="center">
   <img src="Assets/screenshot.png" width="560" alt="The Typestamp log window: day-grouped entries with todos, a bookmark, search, and a live clock" />
 </p>
 
