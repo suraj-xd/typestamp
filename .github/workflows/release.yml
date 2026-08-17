@@ -1,16 +1,14 @@
 name: Release
 
-# Tag a version (git tag v0.1.0 && git push --tags) to build a DMG and
-# attach it to a GitHub Release.
-#
-# TODO once an Apple Developer ID exists: import the signing certificate,
-# replace the ad-hoc codesign in scripts/bundle.sh with "Developer ID
-# Application", then notarize the DMG (xcrun notarytool submit --wait) and
-# staple it (xcrun stapler staple) before the release step.
+# Manual fallback: builds an UNSIGNED DMG artifact. Real releases are cut
+# locally where the Developer ID certificate lives:
+#   NOTARY_PROFILE=typestamp scripts/make-dmg.sh
+#   gh release create vX.Y.Z dist/Typestamp-X.Y.Z.dmg
+# To automate signed releases here, import the certificate and notary
+# credentials as repository secrets first.
 
 on:
-  push:
-    tags: ["v*"]
+  workflow_dispatch:
 
 jobs:
   release:
@@ -25,8 +23,8 @@ jobs:
         run: swift test
       - name: Build DMG
         run: scripts/make-dmg.sh
-      - name: Create release
-        uses: softprops/action-gh-release@v2
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: dist/*.dmg
-          generate_release_notes: true
+          name: Typestamp-dmg-unsigned
+          path: dist/*.dmg

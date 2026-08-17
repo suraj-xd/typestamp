@@ -36,10 +36,8 @@ searchable, day-grouped journal of everything you've ever captured.
 ## Install
 
 Grab the DMG from [Releases](https://github.com/suraj-xd/typestamp/releases)
-and drag Typestamp to Applications.
-
-> The app is not yet notarized: the first launch needs a right-click →
-> **Open** to get past Gatekeeper.
+and drag Typestamp to Applications. Builds are Developer ID-signed and
+notarized.
 
 ### Build from source
 

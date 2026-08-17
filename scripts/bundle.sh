@@ -61,6 +61,18 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-codesign --force --sign - "$APP"
+# Developer ID with hardened runtime when the certificate is present
+# (required for notarization); ad-hoc otherwise (CI, contributors).
+# Sign by certificate hash: duplicate keychain entries make the name form
+# ambiguous.
+IDENTITY=$(security find-identity -v -p codesigning \
+    | awk '/Developer ID Application/ {print $2; exit}')
+if [ -n "$IDENTITY" ]; then
+    codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
+    echo "Signed with Developer ID ($IDENTITY)"
+else
+    codesign --force --sign - "$APP"
+    echo "Signed ad-hoc (no Developer ID certificate found)"
+fi
 
 echo "Built $APP"
