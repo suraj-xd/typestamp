@@ -161,6 +161,42 @@ struct EntryStoreTests {
         #expect(results?.map(\.text) == ["apple pie"])
     }
 
+    @Test("a capture saved as a todo starts open")
+    func todoCaptureStartsOpen() throws {
+        let store = try EntryStore.inMemory()
+
+        try store.save(text: "buy oat milk", isTodo: true, at: date(0))
+        try store.save(text: "plain note", at: date(10))
+
+        let entries = try store.entries()
+        #expect(entries.map(\.isTodo) == [true, false])
+        #expect(entries[0].completedAt == nil)
+    }
+
+    @Test("completing a todo stamps when; reopening clears it")
+    func completingStampsAndReopeningClears() throws {
+        let store = try EntryStore.inMemory()
+        let saved = try store.save(text: "ship the release", isTodo: true, at: date(60))
+        let id = try #require(saved?.id)
+        let doneAt = date(0)
+
+        try store.setCompleted(id: id, completed: true, at: doneAt)
+        #expect(try store.entries()[0].completedAt == doneAt)
+
+        try store.setCompleted(id: id, completed: false)
+        #expect(try store.entries()[0].completedAt == nil)
+    }
+
+    @Test("todos are searchable like any entry")
+    func todosAreSearchable() throws {
+        let store = try EntryStore.inMemory()
+        try store.save(text: "call the registrar", isTodo: true, at: date(0))
+
+        let hits = try store.entries(matching: "registrar")
+        #expect(hits.count == 1)
+        #expect(hits[0].isTodo)
+    }
+
     @Test("delete removes the entry from the log and from search")
     func deleteRemovesEverywhere() throws {
         let store = try EntryStore.inMemory()

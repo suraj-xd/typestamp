@@ -49,23 +49,39 @@ public final class EntryStore: Sendable {
                 t.column("text")
             }
         }
+        migrator.registerMigration("v2-todos") { db in
+            try db.alter(table: "entry") { t in
+                t.add(column: "isTodo", .boolean).notNull().defaults(to: false)
+                t.add(column: "completedAt", .datetime)
+            }
+        }
         return migrator
     }
 
     /// Saves a capture. Returns the stored entry, or nil when there was
     /// nothing to save (no image and no non-whitespace text).
     @discardableResult
-    public func save(text: String?, imagePath: String? = nil, at date: Date = Date()) throws
-        -> Entry?
-    {
+    public func save(
+        text: String?, imagePath: String? = nil, isTodo: Bool = false, at date: Date = Date()
+    ) throws -> Entry? {
         let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanText = trimmed.flatMap { $0.isEmpty ? nil : $0 }
         guard cleanText != nil || imagePath != nil else { return nil }
 
         return try dbQueue.write { db in
-            var entry = Entry(createdAt: date, text: cleanText, imagePath: imagePath)
+            var entry = Entry(createdAt: date, text: cleanText, imagePath: imagePath, isTodo: isTodo)
             try entry.insert(db)
             return entry
+        }
+    }
+
+    /// Marks a todo done (stamping when) or reopens it. A no-op for ids
+    /// that don't exist.
+    public func setCompleted(id: Int64, completed: Bool, at date: Date = Date()) throws {
+        try dbQueue.write { db in
+            try db.execute(
+                sql: "UPDATE entry SET completedAt = ? WHERE id = ?",
+                arguments: [completed ? date : nil, id])
         }
     }
 
