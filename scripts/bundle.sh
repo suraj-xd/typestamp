@@ -23,6 +23,9 @@ for bundle in .build/release/*.bundle; do
     [ -e "$bundle" ] && cp -R "$bundle" "$APP/Contents/Resources/"
 done
 
+# Regenerate with scripts/make-icon.sh after changing Assets/icon.png.
+cp Assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -32,6 +35,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <string>en</string>
     <key>CFBundleExecutable</key>
     <string>Typestamp</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>com.suraj-xd.typestamp</string>
     <key>CFBundleInfoDictionaryVersion</key>
